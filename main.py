@@ -4,18 +4,20 @@ import boto3
 import requests
 import configparser
 
+from os import environ as env
+
 if __name__ == '__main__':
     config = configparser.ConfigParser()
     config.read("config.ini")
 
-    open_weather_api_key = config["OpenWeatherAPI"]['key']
+    open_weather_api_key = env['OPENWEATHER_API_KEY']
     cities = config["Application"]['cities'].split(",")
     sqs_user = config["AWS-SQS"]
 
     client = boto3.client(
         'sqs',
-        aws_access_key_id=sqs_user['access_key'],
-        aws_secret_access_key=sqs_user['secret_key'],
+        aws_access_key_id=env['SQS_ACCESS_KEY'],
+        aws_secret_access_key=env['SQS_SECRET_KEY'],
         region_name=sqs_user['region'],
         endpoint_url=sqs_user['endpoint']
     )
@@ -30,6 +32,7 @@ if __name__ == '__main__':
             "description": content['weather'][0]['description'],
             "feels_like": content['main']['feels_like'],
             "country": content['sys']['country'],
+            "city": content['name'],
             "sunrise": content['sys']['sunrise'],
             "sunset": content['sys']['sunset']
         }
@@ -37,4 +40,6 @@ if __name__ == '__main__':
             QueueUrl=sqs_user['endpoint'],
             MessageBody=json.dumps(response)
         )
-        print(f"Weather for country {content['sys']['country']} has been successfully written to SQS")
+        print(
+            f"Weather for country {content['sys']['country']} and "
+            f"city {content['name']} has been successfully written to SQS")
