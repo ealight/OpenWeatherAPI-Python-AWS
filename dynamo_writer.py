@@ -18,11 +18,12 @@ def lambda_handler(event, context):
 
     records = event['Records']
 
-    for record in records:
-        body = json.loads(record['body'], parse_float=Decimal)
-        table.put_item(
-            Item=dict(ChainMap({'id': record['messageId']}, body))
-        )
+    with table.batch_writer() as batch:
+        for record in records:
+            body = json.loads(record['body'], parse_float=Decimal)
+            batch.put_item(
+                Item=dict(ChainMap({'id': record['messageId']}, body))
+            )
 
     return {
         'statusCode': 200,
