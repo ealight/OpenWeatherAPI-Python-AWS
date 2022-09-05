@@ -1,10 +1,10 @@
+import configparser
 import json
+import uuid
+from os import environ as env
 
 import boto3
 import requests
-import configparser
-
-from os import environ as env
 
 if __name__ == '__main__':
     config = configparser.ConfigParser()
@@ -14,32 +14,40 @@ if __name__ == '__main__':
     cities = config["Application"]['cities'].split(",")
     sqs_user = config["AWS-SQS"]
 
-    client = boto3.client(
-        'sqs',
-        aws_access_key_id=env['SQS_ACCESS_KEY'],
-        aws_secret_access_key=env['SQS_SECRET_KEY'],
-        region_name=sqs_user['region'],
-        endpoint_url=sqs_user['endpoint']
-    )
+    queue_name = sqs_user['queue']
 
+    sqs = boto3.resource(
+        'sqs',
+        region_name=sqs_user['region'],
+        endpoint_url=sqs_user['endpoint'])
+    client = sqs.get_queue_by_name(QueueName=queue_name)
+
+    messages = []
     for city in cities:
         request = requests.get(f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={open_weather_api_key}')
         content = request.json()
         response = {
-            "lon": content['coord']['lon'],
-            "lat": content['coord']['lat'],
-            "main": content['weather'][0]['main'],
-            "description": content['weather'][0]['description'],
-            "feels_like": content['main']['feels_like'],
-            "country": content['sys']['country'],
-            "city": content['name'],
-            "sunrise": content['sys']['sunrise'],
-            "sunset": content['sys']['sunset']
+            "Id": str(uuid.uuid4()),
+            "MessageBody": json.dumps({
+                "lon": content['coord']['lon'],
+                "lat": content['coord']['lat'],
+                "main": content['weather'][0]['main'],
+                "description": content['weather'][0]['description'],
+                "feels_like": content['main']['feels_like'],
+                "country": content['sys']['country'],
+                "city": content['name'],
+                "sunrise": content['sys']['sunrise'],
+                "sunset": content['sys']['sunset']
+            })
         }
-        client.send_message(
-            QueueUrl=sqs_user['endpoint'],
-            MessageBody=json.dumps(response)
-        )
+        messages.append(response)
         print(
             f"Weather for country {content['sys']['country']} and "
-            f"city {content['name']} has been successfully written to SQS")
+            f"city {content['name']} has been successfully added to batch")
+
+    client.send_messages(
+        QueueUrl=sqs_user['endpoint'],
+        Entries=messages
+    )
+
+    print(f'Batch has been successfully pushed to SQS queue {queue_name}')
