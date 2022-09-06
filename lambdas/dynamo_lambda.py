@@ -1,6 +1,5 @@
 import configparser
 import json
-from collections import ChainMap
 from decimal import Decimal
 
 import boto3
@@ -20,10 +19,9 @@ def lambda_handler(event, context):
 
     with table.batch_writer() as batch:
         for record in records:
-            body = json.loads(record['body'], parse_float=Decimal)
-            batch.put_item(
-                Item=dict(ChainMap({'id': record['messageId']}, body))
-            )
+            message = json.loads(record['body'], parse_float=Decimal)
+            message['id'] = record['messageId']
+            batch.put_item(Item=message)
 
     return {
         'statusCode': 200,
