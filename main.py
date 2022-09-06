@@ -12,7 +12,11 @@ if __name__ == '__main__':
     config.read("config.ini")
 
     open_weather_api_key = env['OPENWEATHER_API_KEY']
-    cities = config["Application"]['cities'].split(",")
+
+    app_config = config["Application"]
+    cities = app_config['cities'].split(",")
+    endpoint = app_config['endpoint']
+
     sqs_user = config["AWS-SQS"]
 
     queue_name = sqs_user['queue']
@@ -25,7 +29,7 @@ if __name__ == '__main__':
 
     messages = []
     for city in cities:
-        request = requests.get(f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={open_weather_api_key}')
+        request = requests.get(endpoint.format(city=city, key=open_weather_api_key))
         content = request.json()
         response = {
             "Id": str(uuid.uuid4()),
