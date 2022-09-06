@@ -36,7 +36,7 @@ if __name__ == '__main__':
                 "description": content['weather'][0]['description'],
                 "feels_like": content['main']['feels_like'],
                 "country": content['sys']['country'],
-                "date": datetime.fromtimestamp(content['dt']),
+                "date": str(datetime.fromtimestamp(content['dt'])),
                 "city": content['name'],
                 "sunrise": content['sys']['sunrise'],
                 "sunset": content['sys']['sunset']
