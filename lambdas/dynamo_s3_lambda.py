@@ -31,7 +31,7 @@ def lambda_handler(event, context):
 
             body = json.dumps(unpacked_body)
             client.put_object(Body=body, Bucket=bucket_name, Key=object_name)
-            print(f'Successfully processed new weather for {country} - {city} with ID: {record_id}')
+            print(f'Successfully processed new record for {country} - {city} with ID: {record_id}')
         else:
             print(f'Skipped processing deleted image for {country} with ID: {record_id}')
 
